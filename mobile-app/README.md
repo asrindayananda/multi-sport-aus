@@ -1,205 +1,79 @@
-# Multi-Sport Australia Mobile App
+This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
-React Native mobile application for tracking Australian sports events.
+# Getting Started
 
-## Features
+>**Note**: Make sure you have completed the [React Native - Environment Setup](https://reactnative.dev/docs/environment-setup) instructions till "Creating a new application" step, before proceeding.
 
-- 📅 Calendar view of sports events
-- 🔔 Push notifications for upcoming events
-- 📧 Email reminders via backend API
-- 🏎️ F1, Bathurst, NRL, AFL coverage
-- 🔄 Pull-to-refresh data updates
-- 📱 Cross-platform (iOS, Android, Web)
+## Step 1: Start the Metro Server
 
-## Tech Stack
+First, you will need to start **Metro**, the JavaScript _bundler_ that ships _with_ React Native.
 
-- React Native 0.81.5
-- Expo SDK ~54
-- React Navigation v7
-- React Native Calendars
-- Expo Notifications
-- AsyncStorage
-- Axios
+To start Metro, run the following command from the _root_ of your React Native project:
 
-## Project Structure
-
-```
-src/
-├── screens/
-│   ├── HomeScreen.js           # Main event list
-│   ├── CalendarScreen.js       # Calendar view
-│   ├── EventDetailsScreen.js   # Event details & reminders
-│   └── SettingsScreen.js       # App settings
-├── services/
-│   ├── sportsApi.js            # Sports data API client
-│   └── notificationService.js  # Notification management
-├── navigation/
-│   └── AppNavigator.js         # Navigation configuration
-└── components/
-    └── (reusable components)
-```
-
-## Setup
-
-### Install Dependencies
 ```bash
-npm install
-```
-
-### Start Development Server
-```bash
+# using npm
 npm start
+
+# OR using Yarn
+yarn start
 ```
 
-### Run on Device/Emulator
+## Step 2: Start your Application
+
+Let Metro Bundler run in its _own_ terminal. Open a _new_ terminal from the _root_ of your React Native project. Run the following command to start your _Android_ or _iOS_ app:
+
+### For Android
+
 ```bash
-npm run android  # Android
-npm run ios      # iOS (macOS only)
-npm run web      # Web browser
-```
-
-## Configuration
-
-### Backend URL
-Update in `src/services/notificationService.js`:
-```javascript
-const BACKEND_URL = 'http://your-backend-url:3001';
-```
-
-### App Configuration
-Edit `app.json` for:
-- App name and slug
-- Bundle identifier
-- Permissions
-- Splash screen
-- Icons
-
-## Screens
-
-### Home Screen
-- Lists upcoming events
-- Filter by sport
-- Pull-to-refresh
-- Tap to view details
-
-### Calendar Screen
-- Monthly calendar
-- Color-coded events
-- Date selection
-- Event list
-
-### Event Details Screen
-- Full event info
-- Push notification toggle
-- Email reminder subscription
-- Reminder timing
-
-### Settings Screen
-- Email configuration
-- Backend URL
-- Notification permissions
-- Clear reminders
-
-## Services
-
-### Sports API Service
-Fetches data from:
-- Ergast F1 API (real data)
-- Mock data for Bathurst, NRL, AFL
-
-Add real APIs by modifying `src/services/sportsApi.js`
-
-### Notification Service
-Handles:
-- Push notification permissions
-- Scheduling local notifications
-- Email reminder subscriptions
-- User preference storage
-
-## Building
-
-### Development Build
-```bash
-npx expo prebuild
+# using npm
 npm run android
+
+# OR using Yarn
+yarn android
+```
+
+### For iOS
+
+```bash
+# using npm
 npm run ios
+
+# OR using Yarn
+yarn ios
 ```
 
-### Production Build
-```bash
-npx expo build:android
-npx expo build:ios
-```
+If everything is set up _correctly_, you should see your new app running in your _Android Emulator_ or _iOS Simulator_ shortly provided you have set up your emulator/simulator correctly.
 
-### EAS Build (Recommended)
-```bash
-npm install -g eas-cli
-eas login
-eas build --platform android
-eas build --platform ios
-```
+This is one way to run your app — you can also run it directly from within Android Studio and Xcode respectively.
 
-## Environment Variables
+## Step 3: Modifying your App
 
-Create `.env` file (optional):
-```env
-BACKEND_URL=http://localhost:3001
-```
+Now that you have successfully run the app, let's modify it.
 
-## Testing
+1. Open `App.tsx` in your text editor of choice and edit some lines.
+2. For **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Developer Menu** (<kbd>Ctrl</kbd> + <kbd>M</kbd> (on Window and Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (on macOS)) to see your changes!
 
-```bash
-npm test
-```
+   For **iOS**: Hit <kbd>Cmd ⌘</kbd> + <kbd>R</kbd> in your iOS Simulator to reload the app and see your changes!
 
-## Troubleshooting
+## Congratulations! :tada:
 
-### Metro bundler issues
-```bash
-npm start -- --reset-cache
-```
+You've successfully run and modified your React Native App. :partying_face:
 
-### Node modules issues
-```bash
-rm -rf node_modules
-npm install
-```
+### Now what?
 
-### iOS build issues
-```bash
-cd ios && pod install && cd ..
-```
+- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
+- If you're curious to learn more about React Native, check out the [Introduction to React Native](https://reactnative.dev/docs/getting-started).
 
-### Clear Expo cache
-```bash
-npx expo start -c
-```
+# Troubleshooting
 
-## Permissions
+If you can't get this to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
 
-### iOS
-- Notifications (configured in app.json)
+# Learn More
 
-### Android
-- Notifications
-- Schedule exact alarms
+To learn more about React Native, take a look at the following resources:
 
-## Dependencies
-
-Key dependencies:
-- `expo`: ~54.0.22
-- `react-native`: 0.81.5
-- `@react-navigation/native`: ^7.1.19
-- `react-native-calendars`: ^1.1313.0
-- `expo-notifications`: ^0.32.12
-- `axios`: ^1.13.2
-
-See `package.json` for complete list.
-
-## Contributing
-
-See [CONTRIBUTING.md](../CONTRIBUTING.md) in the root directory.
-
-## License
-
-ISC - See [LICENSE](../LICENSE) file.
+- [React Native Website](https://reactnative.dev) - learn more about React Native.
+- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
+- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
+- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
+- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.

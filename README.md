@@ -4,13 +4,21 @@ A React Native mobile application for tracking Australian sports events includin
 
 ## Features
 
-- 📱 **Cross-platform Mobile App** - Built with React Native and Expo
+- 📱 **Cross-platform Mobile App** - Built with React Native CLI (no Expo dependency)
 - 🏎️ **Multiple Sports Coverage** - F1, Bathurst 1000, NRL, AFL
 - 📅 **Calendar View** - Visual calendar with event markers
 - 🔔 **Push Notifications** - Local notifications for upcoming events
 - 📧 **Email Reminders** - Backend API for email notifications
-- 🌐 **Live Data** - Integrates with real sports APIs (F1 Ergast API)
+- 🌐 **2025 Sports Data** - Curated event schedules based on official calendars
 - ☁️ **Azure Ready** - Docker container ready for Azure deployment
+
+## Important Notes
+
+**API Status**: The Ergast F1 API has shut down. The app now uses curated 2025 calendar data based on the official F1 schedule. For live API integration, consider:
+- [OpenF1 API](https://openf1.org/) - Real-time telemetry and session data
+- [RapidAPI Formula 1](https://rapidapi.com/api-sports/api/api-formula-1) - Comprehensive F1 data (requires API key)
+
+The app structure supports easy integration with these or other APIs.
 
 ## Project Structure
 
@@ -40,7 +48,9 @@ multi-sport-aus/
 ### Prerequisites
 
 - Node.js 18+ and npm
-- Expo CLI (`npm install -g expo-cli`)
+- React Native development environment ([Setup Guide](https://reactnative.dev/docs/environment-setup))
+  - For iOS: Xcode (macOS only)
+  - For Android: Android Studio and SDK
 - Docker (for backend deployment)
 - Azure CLI (for Azure deployment)
 
@@ -56,18 +66,26 @@ cd mobile-app
 npm install
 ```
 
-3. Start the development server:
+3. For iOS (macOS only), install pods:
 ```bash
-npm start
-# or
-npx expo start
+cd ios && pod install && cd ..
 ```
 
-4. Run on your device:
-   - Scan the QR code with Expo Go app (iOS/Android)
-   - Press `a` for Android emulator
-   - Press `i` for iOS simulator (macOS only)
-   - Press `w` for web browser
+4. Start Metro bundler:
+```bash
+npm start
+```
+
+5. Run on your device (in a new terminal):
+```bash
+# Android
+npm run android
+
+# iOS (macOS only)
+npm run ios
+```
+
+**Note**: This app uses React Native CLI, not Expo. You'll need to set up your development environment according to the [React Native environment setup guide](https://reactnative.dev/docs/environment-setup).
 
 ### Backend Setup
 
@@ -118,18 +136,29 @@ docker-compose down
 
 ## Sports Data Sources
 
+**Important Update**: The Ergast F1 API shut down in 2024. The app now uses curated 2025 calendar data.
+
 The app currently uses:
-- **F1**: [Ergast F1 API](http://ergast.com/mrd/) - Real-time Formula 1 race data
-- **Bathurst, NRL, AFL**: Mock data (can be replaced with real APIs)
+- **F1**: Curated 2025 calendar data based on official F1 schedule
+- **Bathurst**: 2025 event data (Bathurst 12 Hour, Bathurst 1000)
+- **NRL**: 2025 season data including State of Origin and Grand Final
+- **AFL**: 2025 season data including key matches and Grand Final
 
-### Integrating Real Sports APIs
+### Integrating Live Sports APIs
 
-To use real data for other sports, you can integrate with:
-- **NRL**: [NRL API](https://www.nrl.com/draw/) or sports data providers
-- **AFL**: [AFL API](https://www.afl.com.au/fixture) or sports data providers
-- **Bathurst**: Supercars API or similar motorsport data sources
+For live, real-time data integration, consider these options:
 
-Update the API calls in `mobile-app/src/services/sportsApi.js`
+**F1 Data:**
+- **[OpenF1 API](https://openf1.org/)** - Free, real-time telemetry and session data
+- **[Jolpi Ergast Mirror](https://documenter.getpostman.com/view/11586746/SztEa7bL)** - Community-maintained Ergast clone (may be temporary)
+- **[RapidAPI Formula 1](https://rapidapi.com/api-sports/api/api-formula-1)** - Comprehensive data (requires API key)
+
+**Other Sports:**
+- **NRL**: [NRL Official API](https://www.nrl.com/draw/) or sports data providers like SportsData.io
+- **AFL**: [AFL Official API](https://www.afl.com.au/fixture) or AFL Tables  
+- **Bathurst**: Supercars official API or motorsport data sources
+
+Update the API calls in `mobile-app/src/services/sportsApi.ts` to integrate with these APIs.
 
 ## Features Overview
 
