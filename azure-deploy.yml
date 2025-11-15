@@ -1,0 +1,41 @@
+# Azure Container Instance deployment configuration
+# Deploy backend API to Azure Container Instances
+
+apiVersion: '2021-09-01'
+location: australiaeast
+name: multi-sport-backend
+properties:
+  containers:
+  - name: backend
+    properties:
+      image: <YOUR_REGISTRY>/multi-sport-backend:latest
+      resources:
+        requests:
+          cpu: 1.0
+          memoryInGb: 1.5
+      ports:
+      - port: 3001
+        protocol: TCP
+      environmentVariables:
+      - name: PORT
+        value: '3001'
+      - name: EMAIL_HOST
+        secureValue: <YOUR_EMAIL_HOST>
+      - name: EMAIL_PORT
+        value: '587'
+      - name: EMAIL_USER
+        secureValue: <YOUR_EMAIL_USER>
+      - name: EMAIL_PASSWORD
+        secureValue: <YOUR_EMAIL_PASSWORD>
+  osType: Linux
+  restartPolicy: Always
+  ipAddress:
+    type: Public
+    ports:
+    - protocol: TCP
+      port: 3001
+    dnsNameLabel: multi-sport-aus-backend
+tags:
+  app: multi-sport-australia
+  environment: production
+type: Microsoft.ContainerInstance/containerGroups
