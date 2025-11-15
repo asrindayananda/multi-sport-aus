@@ -9,8 +9,24 @@ A React Native mobile application for tracking Australian sports events includin
 - 📅 **Calendar View** - Visual calendar with event markers
 - 🔔 **Push Notifications** - Local notifications for upcoming events
 - 📧 **Email Reminders** - Backend API for email notifications
-- 🌐 **2025 Sports Data** - Curated event schedules based on official calendars
+- 🌐 **Live Web Scraping** - Automatically scrapes sports data from official websites
+- 💾 **Database Storage** - SQLite database stores scraped data
+- 🔄 **Weekly Auto-Refresh** - Data refreshed every Sunday at 2:00 AM
 - ☁️ **Azure Ready** - Docker container ready for Azure deployment
+
+## Web Scraping & Data
+
+The backend automatically scrapes live sports data from official Australian sports websites:
+
+- **NRL**: nrl.com/draw - Season fixtures, State of Origin, Grand Final
+- **AFL**: afltables.com - Season fixtures, major events (ANZAC Day, Grand Final)
+- **Bathurst**: supercars.com - Bathurst 12 Hour, 1000, 6 Hour races
+
+**Data Refresh**: Automatic weekly refresh every Sunday at 2:00 AM (configurable)
+
+**Database**: All scraped data is stored in a SQLite database (`sports.db`) for persistent storage and faster access. Email reminder subscriptions are also stored in the database.
+
+**Fallback**: If web scraping fails, the app falls back to curated 2025 calendar data to ensure uninterrupted service.
 
 ## Important Notes
 

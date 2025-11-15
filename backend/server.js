@@ -4,6 +4,9 @@ const nodemailer = require('nodemailer');
 const cron = require('node-cron');
 require('dotenv').config();
 
+// Import database
+const { SportsEvents, EmailReminders, ScraperMetadata } = require('./database');
+
 // Import scrapers
 const { scrapeNRLData } = require('./scrapers/nrlScraper');
 const { scrapeAFLData } = require('./scrapers/aflScraper');
@@ -15,17 +18,6 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-// In-memory storage (in production, use a database)
-const emailReminders = new Map();
-
-// Cache for scraped data (refreshed periodically)
-let sportsDataCache = {
-  nrl: [],
-  afl: [],
-  bathurst: [],
-  lastUpdated: null
-};
 
 // Email transporter configuration
 const transporter = nodemailer.createTransport({
@@ -48,54 +40,82 @@ transporter.verify((error, success) => {
   }
 });
 
-// Function to refresh sports data from scrapers
-async function refreshSportsData() {
+// Function to refresh sports data from scrapers and store in database
+async function refreshSportsData(sportFilter = null) {
   console.log('Refreshing sports data from web scrapers...');
-  try {
-    const [nrlData, aflData, bathurstData] = await Promise.all([
-      scrapeNRLData(),
-      scrapeAFLData(),
-      scrapeBathurstData()
-    ]);
-    
-    sportsDataCache = {
-      nrl: nrlData,
-      afl: aflData,
-      bathurst: bathurstData,
-      lastUpdated: new Date().toISOString()
-    };
-    
-    console.log(`Sports data refreshed: ${nrlData.length} NRL, ${aflData.length} AFL, ${bathurstData.length} Bathurst events`);
-  } catch (error) {
-    console.error('Error refreshing sports data:', error);
+  
+  const sportsToRefresh = sportFilter ? [sportFilter] : ['nrl', 'afl', 'bathurst'];
+  
+  for (const sport of sportsToRefresh) {
+    try {
+      console.log(`Scraping ${sport.toUpperCase()} data...`);
+      let events = [];
+      
+      switch (sport) {
+        case 'nrl':
+          events = await scrapeNRLData();
+          break;
+        case 'afl':
+          events = await scrapeAFLData();
+          break;
+        case 'bathurst':
+          events = await scrapeBathurstData();
+          break;
+      }
+      
+      if (events && events.length > 0) {
+        // Store events in database
+        SportsEvents.upsertMany(events);
+        ScraperMetadata.update(sport, true, null);
+        console.log(`✓ Successfully stored ${events.length} ${sport.toUpperCase()} events in database`);
+      } else {
+        console.log(`! No events returned for ${sport.toUpperCase()}`);
+        ScraperMetadata.update(sport, false, 'No events returned from scraper');
+      }
+    } catch (error) {
+      console.error(`✗ Error refreshing ${sport.toUpperCase()} data:`, error.message);
+      ScraperMetadata.update(sport, false, error.message);
+    }
   }
+  
+  console.log('Sports data refresh complete');
 }
 
 // Refresh sports data on startup
-refreshSportsData();
+console.log('Initial data refresh on startup...');
+refreshSportsData().catch(err => console.error('Startup refresh error:', err));
 
-// Refresh sports data every 6 hours
-cron.schedule('0 */6 * * *', refreshSportsData);
+// Refresh sports data weekly (every Sunday at 2:00 AM)
+// Cron format: minute hour day-of-month month day-of-week
+cron.schedule('0 2 * * 0', () => {
+  console.log('Running weekly scheduled data refresh...');
+  refreshSportsData();
+});
+
+console.log('Scheduled weekly data refresh: Every Sunday at 2:00 AM');
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Multi-Sport Australia Backend API' });
+  const scraperStatus = ScraperMetadata.getAll();
+  res.json({ 
+    status: 'ok', 
+    message: 'Multi-Sport Australia Backend API',
+    database: 'connected',
+    scrapers: scraperStatus
+  });
 });
 
-// Get all sports data
+// Get all sports data from database
 app.get('/api/sports/all', (req, res) => {
   try {
-    const allEvents = [
-      ...sportsDataCache.nrl,
-      ...sportsDataCache.afl,
-      ...sportsDataCache.bathurst
-    ].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const allEvents = SportsEvents.getAll();
+    const metadata = ScraperMetadata.getAll();
     
     res.json({
       success: true,
-      lastUpdated: sportsDataCache.lastUpdated,
       totalEvents: allEvents.length,
-      events: allEvents
+      events: allEvents,
+      scraperMetadata: metadata
     });
   } catch (error) {
     console.error('Error fetching all sports data:', error);
@@ -103,14 +123,17 @@ app.get('/api/sports/all', (req, res) => {
   }
 });
 
-// Get NRL data
+// Get NRL data from database
 app.get('/api/sports/nrl', (req, res) => {
   try {
+    const events = SportsEvents.getBySport('NRL');
+    const metadata = ScraperMetadata.get('nrl');
+    
     res.json({
       success: true,
       sport: 'NRL',
-      lastUpdated: sportsDataCache.lastUpdated,
-      events: sportsDataCache.nrl
+      events,
+      scraperMetadata: metadata
     });
   } catch (error) {
     console.error('Error fetching NRL data:', error);
@@ -118,14 +141,17 @@ app.get('/api/sports/nrl', (req, res) => {
   }
 });
 
-// Get AFL data
+// Get AFL data from database
 app.get('/api/sports/afl', (req, res) => {
   try {
+    const events = SportsEvents.getBySport('AFL');
+    const metadata = ScraperMetadata.get('afl');
+    
     res.json({
       success: true,
       sport: 'AFL',
-      lastUpdated: sportsDataCache.lastUpdated,
-      events: sportsDataCache.afl
+      events,
+      scraperMetadata: metadata
     });
   } catch (error) {
     console.error('Error fetching AFL data:', error);
@@ -133,14 +159,17 @@ app.get('/api/sports/afl', (req, res) => {
   }
 });
 
-// Get Bathurst data
+// Get Bathurst data from database
 app.get('/api/sports/bathurst', (req, res) => {
   try {
+    const events = SportsEvents.getBySport('Bathurst');
+    const metadata = ScraperMetadata.get('bathurst');
+    
     res.json({
       success: true,
       sport: 'Bathurst',
-      lastUpdated: sportsDataCache.lastUpdated,
-      events: sportsDataCache.bathurst
+      events,
+      scraperMetadata: metadata
     });
   } catch (error) {
     console.error('Error fetching Bathurst data:', error);
@@ -151,11 +180,17 @@ app.get('/api/sports/bathurst', (req, res) => {
 // Manually trigger data refresh (for testing/admin)
 app.post('/api/sports/refresh', async (req, res) => {
   try {
-    await refreshSportsData();
+    const { sport } = req.body; // Optional: refresh specific sport
+    await refreshSportsData(sport);
+    
+    const allEvents = SportsEvents.getAll();
+    const metadata = ScraperMetadata.getAll();
+    
     res.json({
       success: true,
-      message: 'Sports data refreshed successfully',
-      lastUpdated: sportsDataCache.lastUpdated
+      message: sport ? `${sport.toUpperCase()} data refreshed successfully` : 'All sports data refreshed successfully',
+      totalEvents: allEvents.length,
+      scraperMetadata: metadata
     });
   } catch (error) {
     console.error('Error refreshing sports data:', error);
@@ -163,7 +198,7 @@ app.post('/api/sports/refresh', async (req, res) => {
   }
 });
 
-// Subscribe to email reminder
+// Subscribe to email reminder - now stored in database
 app.post('/api/reminders/subscribe', (req, res) => {
   try {
     const { email, event } = req.body;
@@ -172,20 +207,19 @@ app.post('/api/reminders/subscribe', (req, res) => {
       return res.status(400).json({ error: 'Email and event are required' });
     }
 
-    const key = `${email}-${event.id}`;
-    emailReminders.set(key, {
-      email,
-      event,
-      subscribed: true,
-      createdAt: new Date(),
-    });
+    // Verify event exists
+    const eventData = SportsEvents.getById(event.id);
+    if (!eventData) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
 
-    console.log(`Subscribed ${email} to ${event.title}`);
+    EmailReminders.subscribe(email, event.id);
+    console.log(`Subscribed ${email} to ${eventData.title}`);
 
     res.json({
       success: true,
       message: 'Successfully subscribed to email reminder',
-      reminder: { email, event: event.title },
+      reminder: { email, event: eventData.title },
     });
   } catch (error) {
     console.error('Error subscribing to reminder:', error);
@@ -202,14 +236,9 @@ app.post('/api/reminders/unsubscribe', (req, res) => {
       return res.status(400).json({ error: 'Email and eventId are required' });
     }
 
-    const key = `${email}-${eventId}`;
-    if (emailReminders.has(key)) {
-      emailReminders.delete(key);
-      console.log(`Unsubscribed ${email} from event ${eventId}`);
-      res.json({ success: true, message: 'Successfully unsubscribed from reminder' });
-    } else {
-      res.status(404).json({ error: 'Reminder not found' });
-    }
+    EmailReminders.unsubscribe(email, eventId);
+    console.log(`Unsubscribed ${email} from event ${eventId}`);
+    res.json({ success: true, message: 'Successfully unsubscribed from reminder' });
   } catch (error) {
     console.error('Error unsubscribing from reminder:', error);
     res.status(500).json({ error: 'Failed to unsubscribe from reminder' });
@@ -218,7 +247,7 @@ app.post('/api/reminders/unsubscribe', (req, res) => {
 
 // Get all reminders (for debugging)
 app.get('/api/reminders', (req, res) => {
-  const reminders = Array.from(emailReminders.values());
+  const reminders = EmailReminders.getActive();
   res.json({ count: reminders.length, reminders });
 });
 
@@ -262,23 +291,20 @@ async function sendEmailReminder(email, event) {
 // Cron job to check and send reminders (runs every hour)
 cron.schedule('0 * * * *', async () => {
   console.log('Checking for upcoming events...');
-  const now = new Date();
-  const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
-
-  for (const [key, reminder] of emailReminders.entries()) {
-    const eventDate = new Date(`${reminder.event.date}T${reminder.event.time}`);
+  
+  try {
+    const upcomingReminders = EmailReminders.getUpcoming(1); // Next 1 hour
     
-    // Send reminder if event is within the next hour
-    if (eventDate > now && eventDate <= oneHourFromNow) {
-      await sendEmailReminder(reminder.email, reminder.event);
+    for (const reminder of upcomingReminders) {
+      await sendEmailReminder(reminder.email, reminder);
       // Remove reminder after sending
-      emailReminders.delete(key);
+      EmailReminders.delete(reminder.email, reminder.event_id);
     }
     
-    // Clean up past events
-    if (eventDate < now) {
-      emailReminders.delete(key);
-    }
+    // Clean up old reminders
+    EmailReminders.cleanup();
+  } catch (error) {
+    console.error('Error in reminder cron job:', error);
   }
 });
 
@@ -286,7 +312,8 @@ cron.schedule('0 * * * *', async () => {
 app.listen(PORT, () => {
   console.log(`Backend API running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/health`);
-  console.log(`Active reminders: ${emailReminders.size}`);
+  console.log(`Database: SQLite (sports.db)`);
+  console.log(`Refresh schedule: Weekly (Sunday 2:00 AM)`);
 });
 
 module.exports = app;
