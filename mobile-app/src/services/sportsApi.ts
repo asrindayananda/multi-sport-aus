@@ -1,11 +1,14 @@
 import axios from 'axios';
 import { SportEvent } from '../types';
 
+// Backend API URL - change this to your deployed backend URL
+const BACKEND_URL = 'http://localhost:3001';
+
 // Sports API service for fetching data from various sources
-// Note: Ergast API has shut down. Using OpenF1 API as alternative
+// Now uses web scraping via backend for NRL, AFL, and Bathurst
 const OPENF1_API = 'https://api.openf1.org/v1';
 
-// Mock data for demonstration purposes
+// Mock data for demonstration purposes (fallback if backend is unavailable)
 // F1 2025 Calendar based on official F1 schedule
 const mockSportsData = {
   f1: [
@@ -217,35 +220,62 @@ export const sportsApi = {
     }
   },
 
-  // Fetch Bathurst events (using mock data)
+  // Fetch Bathurst events - now using web scraper via backend
   async getBathurstSchedule(): Promise<SportEvent[]> {
     try {
-      // In production, this would call a real API
+      console.log('Fetching Bathurst data from backend scraper...');
+      const response = await axios.get(`${BACKEND_URL}/api/sports/bathurst`, {
+        timeout: 5000
+      });
+      
+      if (response.data?.success && response.data?.events) {
+        return response.data.events;
+      }
+      
+      // Fallback to mock data
       return mockSportsData.bathurst;
     } catch (error) {
-      console.error('Error fetching Bathurst data:', error);
+      console.error('Error fetching Bathurst data from backend:', error);
       return mockSportsData.bathurst;
     }
   },
 
-  // Fetch NRL schedule (using mock data)
+  // Fetch NRL schedule - now using web scraper via backend
   async getNRLSchedule(): Promise<SportEvent[]> {
     try {
-      // In production, this would call a real API like SportsData.io or similar
+      console.log('Fetching NRL data from backend scraper...');
+      const response = await axios.get(`${BACKEND_URL}/api/sports/nrl`, {
+        timeout: 5000
+      });
+      
+      if (response.data?.success && response.data?.events) {
+        return response.data.events;
+      }
+      
+      // Fallback to mock data
       return mockSportsData.nrl;
     } catch (error) {
-      console.error('Error fetching NRL data:', error);
+      console.error('Error fetching NRL data from backend:', error);
       return mockSportsData.nrl;
     }
   },
 
-  // Fetch AFL schedule (using mock data)
+  // Fetch AFL schedule - now using web scraper via backend
   async getAFLSchedule(): Promise<SportEvent[]> {
     try {
-      // In production, this would call a real API
+      console.log('Fetching AFL data from backend scraper...');
+      const response = await axios.get(`${BACKEND_URL}/api/sports/afl`, {
+        timeout: 5000
+      });
+      
+      if (response.data?.success && response.data?.events) {
+        return response.data.events;
+      }
+      
+      // Fallback to mock data
       return mockSportsData.afl;
     } catch (error) {
-      console.error('Error fetching AFL data:', error);
+      console.error('Error fetching AFL data from backend:', error);
       return mockSportsData.afl;
     }
   },

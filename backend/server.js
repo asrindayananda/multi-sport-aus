@@ -4,6 +4,11 @@ const nodemailer = require('nodemailer');
 const cron = require('node-cron');
 require('dotenv').config();
 
+// Import scrapers
+const { scrapeNRLData } = require('./scrapers/nrlScraper');
+const { scrapeAFLData } = require('./scrapers/aflScraper');
+const { scrapeBathurstData } = require('./scrapers/bathurstScraper');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -13,6 +18,14 @@ app.use(express.json());
 
 // In-memory storage (in production, use a database)
 const emailReminders = new Map();
+
+// Cache for scraped data (refreshed periodically)
+let sportsDataCache = {
+  nrl: [],
+  afl: [],
+  bathurst: [],
+  lastUpdated: null
+};
 
 // Email transporter configuration
 const transporter = nodemailer.createTransport({
@@ -35,9 +48,119 @@ transporter.verify((error, success) => {
   }
 });
 
+// Function to refresh sports data from scrapers
+async function refreshSportsData() {
+  console.log('Refreshing sports data from web scrapers...');
+  try {
+    const [nrlData, aflData, bathurstData] = await Promise.all([
+      scrapeNRLData(),
+      scrapeAFLData(),
+      scrapeBathurstData()
+    ]);
+    
+    sportsDataCache = {
+      nrl: nrlData,
+      afl: aflData,
+      bathurst: bathurstData,
+      lastUpdated: new Date().toISOString()
+    };
+    
+    console.log(`Sports data refreshed: ${nrlData.length} NRL, ${aflData.length} AFL, ${bathurstData.length} Bathurst events`);
+  } catch (error) {
+    console.error('Error refreshing sports data:', error);
+  }
+}
+
+// Refresh sports data on startup
+refreshSportsData();
+
+// Refresh sports data every 6 hours
+cron.schedule('0 */6 * * *', refreshSportsData);
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Multi-Sport Australia Backend API' });
+});
+
+// Get all sports data
+app.get('/api/sports/all', (req, res) => {
+  try {
+    const allEvents = [
+      ...sportsDataCache.nrl,
+      ...sportsDataCache.afl,
+      ...sportsDataCache.bathurst
+    ].sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    res.json({
+      success: true,
+      lastUpdated: sportsDataCache.lastUpdated,
+      totalEvents: allEvents.length,
+      events: allEvents
+    });
+  } catch (error) {
+    console.error('Error fetching all sports data:', error);
+    res.status(500).json({ error: 'Failed to fetch sports data' });
+  }
+});
+
+// Get NRL data
+app.get('/api/sports/nrl', (req, res) => {
+  try {
+    res.json({
+      success: true,
+      sport: 'NRL',
+      lastUpdated: sportsDataCache.lastUpdated,
+      events: sportsDataCache.nrl
+    });
+  } catch (error) {
+    console.error('Error fetching NRL data:', error);
+    res.status(500).json({ error: 'Failed to fetch NRL data' });
+  }
+});
+
+// Get AFL data
+app.get('/api/sports/afl', (req, res) => {
+  try {
+    res.json({
+      success: true,
+      sport: 'AFL',
+      lastUpdated: sportsDataCache.lastUpdated,
+      events: sportsDataCache.afl
+    });
+  } catch (error) {
+    console.error('Error fetching AFL data:', error);
+    res.status(500).json({ error: 'Failed to fetch AFL data' });
+  }
+});
+
+// Get Bathurst data
+app.get('/api/sports/bathurst', (req, res) => {
+  try {
+    res.json({
+      success: true,
+      sport: 'Bathurst',
+      lastUpdated: sportsDataCache.lastUpdated,
+      events: sportsDataCache.bathurst
+    });
+  } catch (error) {
+    console.error('Error fetching Bathurst data:', error);
+    res.status(500).json({ error: 'Failed to fetch Bathurst data' });
+  }
+});
+
+// Manually trigger data refresh (for testing/admin)
+app.post('/api/sports/refresh', async (req, res) => {
+  try {
+    await refreshSportsData();
+    res.json({
+      success: true,
+      message: 'Sports data refreshed successfully',
+      lastUpdated: sportsDataCache.lastUpdated
+    });
+  } catch (error) {
+    console.error('Error refreshing sports data:', error);
+    res.status(500).json({ error: 'Failed to refresh sports data' });
+  }
 });
 
 // Subscribe to email reminder

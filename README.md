@@ -136,29 +136,41 @@ docker-compose down
 
 ## Sports Data Sources
 
-**Important Update**: The Ergast F1 API shut down in 2024. The app now uses curated 2025 calendar data.
+**Web Scraping Implemented!** The backend now includes web scrapers that fetch data from official sports websites.
 
-The app currently uses:
+The app uses:
 - **F1**: Curated 2025 calendar data based on official F1 schedule
-- **Bathurst**: 2025 event data (Bathurst 12 Hour, Bathurst 1000)
-- **NRL**: 2025 season data including State of Origin and Grand Final
-- **AFL**: 2025 season data including key matches and Grand Final
+- **NRL**: **Web scraper** from nrl.com/draw (State of Origin, Grand Final, key matches)
+- **AFL**: **Web scraper** from afltables.com (Round 1, ANZAC Day, Grand Final, etc.)
+- **Bathurst**: **Web scraper** from supercars.com (12 Hour, 1000, 6 Hour races)
 
-### Integrating Live Sports APIs
+### How Web Scraping Works
 
-For live, real-time data integration, consider these options:
+The backend API automatically scrapes sports websites:
+- **On startup**: Immediate data fetch
+- **Every 6 hours**: Automatic refresh via cron job
+- **Fallback data**: Uses curated calendars if scraping fails
+- **API endpoints**: 
+  - `GET /api/sports/nrl` - NRL events
+  - `GET /api/sports/afl` - AFL events
+  - `GET /api/sports/bathurst` - Bathurst events
+  - `GET /api/sports/all` - All sports combined
+
+See [WEB_SCRAPING.md](WEB_SCRAPING.md) for implementation details.
+
+### Alternative Live APIs
+
+For F1 and other integrations:
 
 **F1 Data:**
 - **[OpenF1 API](https://openf1.org/)** - Free, real-time telemetry and session data
-- **[Jolpi Ergast Mirror](https://documenter.getpostman.com/view/11586746/SztEa7bL)** - Community-maintained Ergast clone (may be temporary)
 - **[RapidAPI Formula 1](https://rapidapi.com/api-sports/api/api-formula-1)** - Comprehensive data (requires API key)
 
-**Other Sports:**
-- **NRL**: [NRL Official API](https://www.nrl.com/draw/) or sports data providers like SportsData.io
-- **AFL**: [AFL Official API](https://www.afl.com.au/fixture) or AFL Tables  
-- **Bathurst**: Supercars official API or motorsport data sources
+**Paid Sports Data Services:**
+- **SportsData.io** - Comprehensive sports data APIs
+- **The Odds API** - Sports odds and scores
 
-Update the API calls in `mobile-app/src/services/sportsApi.ts` to integrate with these APIs.
+Update scraper logic in `backend/scrapers/` to enhance data collection.
 
 ## Features Overview
 
